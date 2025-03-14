@@ -1,0 +1,54 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validator-api
+  namespace: myapp-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: validator-api
+  template:
+    metadata:
+      labels:
+        app: validator-api
+    spec:
+      containers:
+      - name: validator-api
+        image: kandarpincanada/validator-api:1.0.0
+        ports:
+        - containerPort: 6000
+        env:
+        - name: PROCESSOR_API_BASE_URL
+          value: "http://processor-api-service:6001"
+        - name: VOLUME_MOUNT_PATH
+          value: "/mnt/data"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: "/mnt/data"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m" 
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: storage-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: validator-api-service
+  namespace: myapp-namespace
+spec:
+  type: ClusterIP
+  selector:
+    app: validator-api
+  ports:
+    - protocol: TCP
+      port: 6000
+      targetPort: 6000
