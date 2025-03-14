@@ -1,10 +1,16 @@
-# Provider configuration
 provider "google" {
-  # Configure these values based on your Google Cloud setup
-  project     = "spry-gateway-453614-i1"
+  project     = var.project_id
   region      = "us-central1"
   zone        = "us-central1-a"
-  credentials = file("spry-gateway-453614-i1-0535695a5853.json")
+  credentials = file(var.gcp_credentials)
+}
+
+variable "project_id" {
+  default = "spry-gateway-453614-i1"
+}
+
+variable "gcp_credentials" {
+  default = "/home/runner/gcp-sa-key.json"
 }
 
 provider "kubernetes" {

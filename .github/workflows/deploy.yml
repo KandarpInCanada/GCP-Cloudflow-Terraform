@@ -1,0 +1,50 @@
+name: Build, Push to Google Artifact Registry, and Deploy GKE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ✅ Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # ✅ Step 2: Write GCP Credentials from Secrets to a File
+      - name: Setup Google Cloud Credentials
+        run: echo '${{ secrets.GCP_SA_KEY }}' > $HOME/gcp-sa-key.json
+
+      # ✅ Step 3: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ✅ Step 4: Install Terraform
+      - name: Install Terraform
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip
+          wget https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
+          unzip terraform_1.6.0_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform --version
+
+      # ✅ Step 5: Initialize Terraform with Secret Key
+      - name: Initialize Terraform
+        run: |
+          cd terraform
+          terraform init
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+
+      # ✅ Step 6: Apply Terraform (Uses Secret Key)
+      - name: Apply Terraform
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
