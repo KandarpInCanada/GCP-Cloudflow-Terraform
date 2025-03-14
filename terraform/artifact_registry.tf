@@ -1,8 +1,3 @@
-provider "google" {
-  project = "your-gcp-project-id"
-  region  = "us-central1"
-}
-
 # Check if the repository already exists
 data "google_artifact_registry_repository" "existing_repo" {
   provider      = google
