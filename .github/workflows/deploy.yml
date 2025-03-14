@@ -39,25 +39,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-      # ✅ Step 6: Import Existing GKE Cluster (if it exists)
-      - name: Import Existing GKE Cluster
-        run: |
-          cd terraform
-          terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/zones/us-central1-a/clusters/myapp-gke-cluster || true
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
-        continue-on-error: true  # Ignore errors if the cluster does not exist
-
-      # ✅ Step 7: Import Existing Artifact Registry Repository (if it exists)
-      - name: Import Existing Artifact Registry Repository
-        run: |
-          cd terraform
-          terraform import google_artifact_registry_repository.myapp_repo projects/${{ secrets.PROJECT_ID }}/locations/us-central1/repositories/myapp-repo || true
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
-        continue-on-error: true  # Ignore errors if the repository does not exist
-
-      # ✅ Step 8: Terraform Plan (Only on Pull Requests)
+      # ✅ Step 6: Terraform Plan (Only on Pull Requests)
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
         run: |
@@ -65,7 +47,7 @@ jobs:
           terraform plan -no-color -input=false
         continue-on-error: true
 
-      # ✅ Step 9: Apply Terraform (Only on Push to Main Branch)
+      # ✅ Step 7: Apply Terraform (Only on Push to Main Branch)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |

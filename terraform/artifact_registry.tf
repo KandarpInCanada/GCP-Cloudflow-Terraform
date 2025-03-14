@@ -8,5 +8,9 @@ resource "google_artifact_registry_repository" "myapp_repo" {
 
   lifecycle {
     prevent_destroy = true # Prevent accidental deletion of the repository
+    ignore_changes = [
+      description,
+      labels,
+    ]
   }
 }

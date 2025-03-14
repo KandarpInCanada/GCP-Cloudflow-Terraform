@@ -36,4 +36,13 @@ resource "google_container_node_pool" "primary_nodes" {
     auto_repair  = true
     auto_upgrade = true
   }
+
+  # Add lifecycle configuration to handle existing resources
+  lifecycle {
+    ignore_changes = [
+      node_count,
+      node_config.0.labels,
+      initial_node_count,
+    ]
+  }
 }

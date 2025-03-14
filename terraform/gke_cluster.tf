@@ -15,4 +15,12 @@ resource "google_container_cluster" "primary" {
       start_time = "03:00" # UTC time for maintenance (low traffic hours)
     }
   }
+
+  # Ignore changes if the resource already exists
+  lifecycle {
+    ignore_changes = [
+      initial_node_count,
+      node_config,
+    ]
+  }
 }
