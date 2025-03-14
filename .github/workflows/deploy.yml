@@ -1,4 +1,4 @@
-name: Build, Push to Google Artifact Registry, and Deploy GKE
+name: Terraform Setup, Build, Push to GAR, and Deploy GKE
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  build-push-deploy:
+  terraform-setup:
+    name: "Setup Infrastructure with Terraform"
     runs-on: ubuntu-latest
 
     steps:
@@ -14,7 +15,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # ✅ Step 2: Write GCP Credentials from Secrets to a File
+      # ✅ Step 2: Setup Google Cloud Credentials
       - name: Setup Google Cloud Credentials
         run: echo '${{ secrets.GCP_SA_KEY }}' > $HOME/gcp-sa-key.json
 
@@ -24,27 +25,101 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # Step 5: Install Terraform
-      - name: Install Terraform
-        run: |
-          sudo apt-get update && sudo apt-get install -y unzip
-          wget https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
-          unzip -o terraform_1.6.0_linux_amd64.zip  # -o forces overwrite without prompting
-          sudo mv -f terraform /usr/local/bin/      # -f forces overwrite
-          terraform --version
+      # ✅ Step 4: Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
 
-      # ✅ Step 5: Initialize Terraform with Secret Key
-      - name: Initialize Terraform
+      # ✅ Step 5: Initialize Terraform
+      - name: Terraform Init
         run: |
           cd terraform
-          terraform init
+          terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-      # ✅ Step 6: Apply Terraform (Uses Secret Key)
-      - name: Apply Terraform
+      # ✅ Step 6: Terraform Plan (Only on Pull Requests)
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
         run: |
           cd terraform
-          terraform apply -auto-approve
+          terraform plan -no-color -input=false
+        continue-on-error: true
+
+      # ✅ Step 7: Apply Terraform (Only on Push to Main Branch)
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cd terraform
+          terraform apply -auto-approve -input=false
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+
+  build-push:
+    name: "Build & Push Docker Images"
+    needs: terraform-setup  # ✅ Runs only after Terraform completes
+    runs-on: ubuntu-latest
+
+    steps:
+      # ✅ Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # ✅ Step 2: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ✅ Step 3: Configure Docker for Google Artifact Registry
+      - name: Configure Docker for GAR
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      # ✅ Step 4: Build Validator API Docker Image
+      - name: Build Validator API Docker Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA -f Dockerfile.validator .
+
+      # ✅ Step 5: Push Validator API Docker Image
+      - name: Push Validator API Docker Image
+        run: |
+          docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
+
+      # ✅ Step 6: Build Processor API Docker Image
+      - name: Build Processor API Docker Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA -f Dockerfile.processor .
+
+      # ✅ Step 7: Push Processor API Docker Image
+      - name: Push Processor API Docker Image
+        run: |
+          docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
+
+  deploy-gke:
+    name: "Deploy to GKE"
+    needs: build-push  # ✅ Runs only after Docker images are pushed
+    runs-on: ubuntu-latest
+
+    steps:
+      # ✅ Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # ✅ Step 2: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ✅ Step 3: Connect to GKE Cluster
+      - name: Get GKE Credentials
+        run: |
+          gcloud container clusters get-credentials myapp-gke-cluster --region us-central1
+
+      # ✅ Step 4: Update Kubernetes Deployments
+      - name: Update Kubernetes Deployments
+        run: |
+          kubectl set image deployment/validator-api validator-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
+          kubectl set image deployment/processor-api processor-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
