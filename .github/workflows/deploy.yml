@@ -41,7 +41,6 @@ jobs:
 
       # ✅ Step 6: Terraform Plan (Only on Pull Requests)
       - name: Terraform Plan
-        if: github.event_name == 'pull_request'
         run: |
           cd terraform
           terraform plan -no-color -input=false
