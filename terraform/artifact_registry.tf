@@ -1,11 +1,4 @@
-# Check if the repository already exists
-data "google_artifact_registry_repository" "existing_repo" {
-  provider      = google
-  location      = "us-central1"
-  repository_id = "myapp-repo"
-}
-
-# Create the repository only if it doesn't exist
+# Create the Artifact Registry repository
 resource "google_artifact_registry_repository" "myapp_repo" {
   provider      = google
   location      = "us-central1"
@@ -14,8 +7,6 @@ resource "google_artifact_registry_repository" "myapp_repo" {
   format        = "DOCKER"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = true # Prevent accidental deletion of the repository
   }
-
-  count = length(data.google_artifact_registry_repository.existing_repo.id) == 0 ? 1 : 0
 }
