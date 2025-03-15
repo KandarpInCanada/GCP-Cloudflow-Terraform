@@ -110,7 +110,7 @@ jobs:
 
   deploy-gke:
     name: "Deploy to GKE"
-    needs: build-push  # ✅ Runs only after Docker images are pushed
+    needs: build-push
     runs-on: ubuntu-latest
 
     steps:
@@ -124,10 +124,10 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # ✅ Step 3: Connect to GKE Cluster
+      # ✅ Step 3: Connect to GKE Cluster (Updated to use the correct zone)
       - name: Get GKE Credentials
         run: |
-          gcloud container clusters get-credentials myapp-gke-cluster --region us-central1
+          gcloud container clusters get-credentials myapp-gke-cluster --zone us-central1-a
 
       # ✅ Step 4: Update Kubernetes Deployments
       - name: Update Kubernetes Deployments
