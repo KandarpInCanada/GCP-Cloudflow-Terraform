@@ -124,12 +124,24 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # ✅ Step 3: Connect to GKE Cluster (Updated to use the correct zone)
+      # ✅ Step 3: Install gke-gcloud-auth-plugin
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+
+      # ✅ Step 4: Configure kubectl to use gke-gcloud-auth-plugin
+      - name: Configure kubectl to use gke-gcloud-auth-plugin
+        run: |
+          echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+          gcloud components update
+
+      # ✅ Step 5: Connect to GKE Cluster
       - name: Get GKE Credentials
         run: |
           gcloud container clusters get-credentials myapp-gke-cluster --zone us-central1-a
 
-      # ✅ Step 4: Update Kubernetes Deployments
+      # ✅ Step 6: Update Kubernetes Deployments
       - name: Update Kubernetes Deployments
         run: |
           kubectl set image deployment/validator-api validator-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
