@@ -1,3 +1,9 @@
+# Import existing GKE cluster
+import {
+  to = google_container_cluster.primary
+  id = "projects/${var.project_id}/locations/us-central1-a/clusters/myapp-gke-cluster"
+}
+
 # Create GKE cluster
 resource "google_container_cluster" "primary" {
   name                     = "myapp-gke-cluster"

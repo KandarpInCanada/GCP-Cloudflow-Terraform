@@ -1,3 +1,9 @@
+# Import existing node pool
+import {
+  to = google_container_node_pool.primary_nodes
+  id = "projects/${var.project_id}/locations/us-central1-a/clusters/myapp-gke-cluster/nodePools/myapp-node-pool"
+}
+
 # Create node pool with improved resources
 resource "google_container_node_pool" "primary_nodes" {
   name       = "myapp-node-pool"
