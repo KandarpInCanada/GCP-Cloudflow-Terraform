@@ -27,9 +27,11 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: Terraform Init
+      - name: Cleanup Terraform State (Start Fresh)
         run: |
           cd terraform
+          rm -rf .terraform
+          rm -f .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
           terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
@@ -49,14 +51,15 @@ jobs:
           else
             echo "Cluster does not exist, it will be created."
             echo "import_cluster=false" >> $GITHUB_ENV
+            cd terraform
+            terraform state list | grep google_container_cluster.primary && terraform state rm google_container_cluster.primary || echo "No existing state found"
           fi
 
       - name: Import Existing Cluster if Found
         if: env.import_cluster == 'true'
         run: |
           cd terraform
-          terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster
-          terraform import google_container_node_pool.primary_nodes projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster/nodePools/myapp-node-pool
+          terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster || echo "Skipping import."
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
@@ -75,47 +78,31 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
   build-push:
-      name: "Build & Push Docker Images"
-      needs: terraform-setup  # ✅ Runs only after Terraform completes
-      runs-on: ubuntu-latest
+    name: "Build & Push Docker Images"
+    needs: terraform-setup  # ✅ Runs only after Terraform completes
+    runs-on: ubuntu-latest
 
-      steps:
-        # ✅ Step 1: Checkout Code
-        - name: Checkout Code
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-        # ✅ Step 2: Authenticate with Google Cloud
-        - name: Authenticate with Google Cloud
-          uses: google-github-actions/auth@v1
-          with:
-            credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-        # ✅ Step 3: Configure Docker for Google Artifact Registry
-        - name: Configure Docker for GAR
-          run: |
-            gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Configure Docker for GAR
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-        # ✅ Step 4: Build Validator API Docker Image
-        - name: Build Validator API Docker Image
-          run: |
-            docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA \
-            -f validator_api/Dockerfile validator_api/
+      - name: Build & Push Validator API Docker Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA -f validator_api/Dockerfile validator_api/
+          docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
 
-        # ✅ Step 5: Push Validator API Docker Image
-        - name: Push Validator API Docker Image
-          run: |
-            docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
-
-        # ✅ Step 6: Build Processor API Docker Image
-        - name: Build Processor API Docker Image
-          run: |
-            docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA \
-            -f processor_api/Dockerfile processor_api/
-
-        # ✅ Step 7: Push Processor API Docker Image
-        - name: Push Processor API Docker Image
-          run: |
-            docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
+      - name: Build & Push Processor API Docker Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA -f processor_api/Dockerfile processor_api/
+          docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
 
   deploy-gke:
     name: "Deploy to GKE"
@@ -123,56 +110,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # ✅ Step 2: Authenticate with Google Cloud
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # ✅ Step 3: Install Google Cloud SDK
       - name: Install Google Cloud SDK
         run: |
           echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
           curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
           sudo apt-get update
-          sudo apt-get install -y google-cloud-sdk
+          sudo apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin
 
-      # ✅ Step 4: Install gke-gcloud-auth-plugin
-      - name: Install gke-gcloud-auth-plugin
-        run: |
-          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
-
-      # ✅ Step 5: Configure kubectl to use gke-gcloud-auth-plugin
-      - name: Configure kubectl to use gke-gcloud-auth-plugin
-        run: |
-          echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
-
-      # ✅ Step 6: Connect to GKE Cluster
-      - name: Get GKE Credentials
+      - name: Configure kubectl for GKE
         run: |
           gcloud container clusters get-credentials myapp-gke-cluster --zone us-central1-a
 
-      # ✅ Step 7: Apply Kubernetes Resources
       - name: Apply Kubernetes Resources
         run: |
-          # Apply namespace
           kubectl apply -f k8s/namespace.yaml
-
-          # Apply persistent volume
           kubectl apply -f k8s/persistent-volume.yaml
-
-          # Apply persistent volume claim
           kubectl apply -f k8s/persistent-volume-claim.yaml
-
-          # Apply config map
           kubectl apply -f k8s/config-map.yaml
-
-          # Apply validator-api deployment
           kubectl apply -f k8s/validator_api/validator-deployment.yaml
-
-          # Apply processor-api deployment
           kubectl apply -f k8s/processor_api/processor-deployment.yaml
