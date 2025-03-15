@@ -39,40 +39,39 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-      # ✅ Step 6: Check if Resources Already Exist
-      - name: Check if Resources Already Exist
-        id: check-resources
+      # ✅ Step 6: Import Existing Resources (if not already in state)
+      - name: Import Existing Resources
         run: |
           cd terraform
-          if gcloud artifacts repositories describe myapp-repo --location=us-central1 > /dev/null 2>&1; then
-            echo "Artifact Registry repository already exists."
-            echo "artifact_registry_exists=true" >> $GITHUB_OUTPUT
+          # Import GKE Cluster if it exists and is not in the state
+          if gcloud container clusters describe myapp-gke-cluster --region us-central1 > /dev/null 2>&1; then
+            echo "Importing GKE cluster..."
+            terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster
           else
-            echo "Artifact Registry repository does not exist."
-            echo "artifact_registry_exists=false" >> $GITHUB_OUTPUT
+            echo "GKE cluster does not exist. Skipping import."
           fi
 
-          if gcloud container clusters describe myapp-gke-cluster --region us-central1 > /dev/null 2>&1; then
-            echo "GKE cluster already exists."
-            echo "gke_cluster_exists=true" >> $GITHUB_OUTPUT
+          # Import Artifact Registry Repository if it exists and is not in the state
+          if gcloud artifacts repositories describe myapp-repo --location=us-central1 > /dev/null 2>&1; then
+            echo "Importing Artifact Registry repository..."
+            terraform import google_artifact_registry_repository.myapp_repo projects/${{ secrets.PROJECT_ID }}/locations/us-central1/repositories/myapp-repo
           else
-            echo "GKE cluster does not exist."
-            echo "gke_cluster_exists=false" >> $GITHUB_OUTPUT
+            echo "Artifact Registry repository does not exist. Skipping import."
           fi
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-      # ✅ Step 7: Terraform Plan (Only if Resources Do Not Exist)
+      # ✅ Step 7: Terraform Plan
       - name: Terraform Plan
-        if: steps.check-resources.outputs.artifact_registry_exists == 'false' || steps.check-resources.outputs.gke_cluster_exists == 'false'
         run: |
           cd terraform
           terraform plan -no-color -input=false
-        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-      # ✅ Step 8: Apply Terraform (Only if Resources Do Not Exist)
+      # ✅ Step 8: Apply Terraform (Only on Push to Main Branch)
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && (steps.check-resources.outputs.artifact_registry_exists == 'false' || steps.check-resources.outputs.gke_cluster_exists == 'false')
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           cd terraform
           terraform apply -auto-approve -input=false
