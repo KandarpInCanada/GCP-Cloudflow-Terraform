@@ -124,24 +124,30 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # ✅ Step 3: Install gke-gcloud-auth-plugin
+      # ✅ Step 3: Install Google Cloud SDK
+      - name: Install Google Cloud SDK
+        run: |
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-sdk
+
+      # ✅ Step 4: Install gke-gcloud-auth-plugin
       - name: Install gke-gcloud-auth-plugin
         run: |
-          sudo apt-get update
           sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
-      # ✅ Step 4: Configure kubectl to use gke-gcloud-auth-plugin
+      # ✅ Step 5: Configure kubectl to use gke-gcloud-auth-plugin
       - name: Configure kubectl to use gke-gcloud-auth-plugin
         run: |
           echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
-          gcloud components update
 
-      # ✅ Step 5: Connect to GKE Cluster
+      # ✅ Step 6: Connect to GKE Cluster
       - name: Get GKE Credentials
         run: |
           gcloud container clusters get-credentials myapp-gke-cluster --zone us-central1-a
 
-      # ✅ Step 6: Update Kubernetes Deployments
+      # ✅ Step 7: Update Kubernetes Deployments
       - name: Update Kubernetes Deployments
         run: |
           kubectl set image deployment/validator-api validator-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
