@@ -39,21 +39,23 @@ jobs:
           env:
             GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-        # ✅ Step 6: Import Existing Resources (with fallback to create)
+              # ✅ Step 6: Import or Create Resources
         - name: Import or Create Resources
           run: |
             cd terraform
-            # Attempt to import existing resources
+            # Attempt to import existing GKE cluster
             if ! terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster; then
-              echo "Cluster not found, creating new cluster..."
+              echo "GKE cluster not found, creating new cluster..."
               terraform apply -target=google_container_cluster.primary -auto-approve -input=false
             fi
 
+            # Attempt to import existing node pool
             if ! terraform import google_container_node_pool.primary_nodes projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster/nodePools/myapp-node-pool; then
               echo "Node pool not found, creating new node pool..."
               terraform apply -target=google_container_node_pool.primary_nodes -auto-approve -input=false
             fi
 
+            # Attempt to import existing Artifact Registry repository
             if ! terraform import google_artifact_registry_repository.myapp_repo projects/${{ secrets.PROJECT_ID }}/locations/us-central1/repositories/myapp-repo; then
               echo "Artifact Registry repository not found, creating new repository..."
               terraform apply -target=google_artifact_registry_repository.myapp_repo -auto-approve -input=false
