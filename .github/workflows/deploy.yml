@@ -27,11 +27,17 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: Cleanup Terraform State (Start Fresh)
+      - name: Cleanup Terraform State (Local & Remote)
         run: |
           cd terraform
+          # Delete local state
           rm -rf .terraform
           rm -f .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
+
+          # Remove remote state from GCS (if exists)
+          gsutil rm -f gs://${{ secrets.TF_BUCKET }}/terraform.tfstate || echo "No remote state found"
+          
+          # Reinitialize Terraform
           terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
@@ -60,15 +66,6 @@ jobs:
         run: |
           cd terraform
           terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster || echo "Skipping import."
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
-      
-      - name: Cleanup Terraform State (Start Fresh)
-        run: |
-          cd terraform
-          rm -rf .terraform
-          rm -f .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
-          terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
