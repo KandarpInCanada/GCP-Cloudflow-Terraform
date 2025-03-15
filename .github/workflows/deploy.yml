@@ -39,6 +39,21 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
+      # ✅ Step 6: Check if GKE Cluster Exists and Import Resources (if they exist)
+      - name: Check if GKE Cluster Exists and Import Resources
+        run: |
+          cd terraform
+          if gcloud container clusters describe myapp-gke-cluster --zone us-central1-a --project ${{ secrets.PROJECT_ID }} > /dev/null 2>&1; then
+            echo "Cluster exists. Importing resources into Terraform state..."
+            terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster
+            terraform import google_container_node_pool.primary_nodes projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster/nodePools/myapp-node-pool
+            terraform import google_artifact_registry_repository.myapp_repo projects/${{ secrets.PROJECT_ID }}/locations/us-central1/repositories/myapp-repo
+          else
+            echo "Cluster does not exist. Skipping import step."
+          fi
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+
       # ✅ Step 7: Terraform Plan (Only on Pull Requests)
       - name: Terraform Plan
         run: |
@@ -56,47 +71,47 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
   build-push:
-      name: "Build & Push Docker Images"
-      needs: terraform-setup  # ✅ Runs only after Terraform completes
-      runs-on: ubuntu-latest
+    name: "Build & Push Docker Images"
+    needs: terraform-setup  # ✅ Runs only after Terraform completes
+    runs-on: ubuntu-latest
 
-      steps:
-        # ✅ Step 1: Checkout Code
-        - name: Checkout Code
-          uses: actions/checkout@v3
+    steps:
+      # ✅ Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-        # ✅ Step 2: Authenticate with Google Cloud
-        - name: Authenticate with Google Cloud
-          uses: google-github-actions/auth@v1
-          with:
-            credentials_json: ${{ secrets.GCP_SA_KEY }}
+      # ✅ Step 2: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-        # ✅ Step 3: Configure Docker for Google Artifact Registry
-        - name: Configure Docker for GAR
-          run: |
-            gcloud auth configure-docker us-central1-docker.pkg.dev
+      # ✅ Step 3: Configure Docker for Google Artifact Registry
+      - name: Configure Docker for GAR
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
 
-        # ✅ Step 4: Build Validator API Docker Image
-        - name: Build Validator API Docker Image
-          run: |
-            docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA \
-            -f validator_api/Dockerfile validator_api/
+      # ✅ Step 4: Build Validator API Docker Image
+      - name: Build Validator API Docker Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA \
+          -f validator_api/Dockerfile validator_api/
 
-        # ✅ Step 5: Push Validator API Docker Image
-        - name: Push Validator API Docker Image
-          run: |
-            docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
+      # ✅ Step 5: Push Validator API Docker Image
+      - name: Push Validator API Docker Image
+        run: |
+          docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
 
-        # ✅ Step 6: Build Processor API Docker Image
-        - name: Build Processor API Docker Image
-          run: |
-            docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA \
-            -f processor_api/Dockerfile processor_api/
+      # ✅ Step 6: Build Processor API Docker Image
+      - name: Build Processor API Docker Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA \
+          -f processor_api/Dockerfile processor_api/
 
-        # ✅ Step 7: Push Processor API Docker Image
-        - name: Push Processor API Docker Image
-          run: |
-            docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
+      # ✅ Step 7: Push Processor API Docker Image
+      - name: Push Processor API Docker Image
+        run: |
+          docker push us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
 
   deploy-gke:
     name: "Deploy to GKE"
