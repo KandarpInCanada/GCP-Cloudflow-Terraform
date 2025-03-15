@@ -7,63 +7,75 @@ on:
 
 jobs:
   terraform-setup:
-    name: "Setup Infrastructure with Terraform"
-    runs-on: ubuntu-latest
+      name: "Setup Infrastructure with Terraform"
+      runs-on: ubuntu-latest
 
-    steps:
-      # ✅ Step 1: Checkout Code
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      steps:
+        # ✅ Step 1: Checkout Code
+        - name: Checkout Code
+          uses: actions/checkout@v3
 
-      # ✅ Step 2: Setup Google Cloud Credentials
-      - name: Setup Google Cloud Credentials
-        run: echo '${{ secrets.GCP_SA_KEY }}' > $HOME/gcp-sa-key.json
+        # ✅ Step 2: Setup Google Cloud Credentials
+        - name: Setup Google Cloud Credentials
+          run: echo '${{ secrets.GCP_SA_KEY }}' > $HOME/gcp-sa-key.json
 
-      # ✅ Step 3: Authenticate with Google Cloud
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+        # ✅ Step 3: Authenticate with Google Cloud
+        - name: Authenticate with Google Cloud
+          uses: google-github-actions/auth@v1
+          with:
+            credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # ✅ Step 4: Setup Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.0
+        # ✅ Step 4: Setup Terraform
+        - name: Setup Terraform
+          uses: hashicorp/setup-terraform@v2
+          with:
+            terraform_version: 1.6.0
 
-      # ✅ Step 5: Initialize Terraform
-      - name: Terraform Init
-        run: |
-          cd terraform
-          terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+        # ✅ Step 5: Initialize Terraform
+        - name: Terraform Init
+          run: |
+            cd terraform
+            terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}"
+          env:
+            GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
-      # ✅ Step 6: Import Existing Resources
-      - name: Import Existing Resources
-        run: |
-          cd terraform
-          terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster
-          terraform import google_container_node_pool.primary_nodes projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster/nodePools/myapp-node-pool
-          terraform import google_artifact_registry_repository.myapp_repo projects/${{ secrets.PROJECT_ID }}/locations/us-central1/repositories/myapp-repo
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+        # ✅ Step 6: Import Existing Resources (with fallback to create)
+        - name: Import or Create Resources
+          run: |
+            cd terraform
+            # Attempt to import existing resources
+            if ! terraform import google_container_cluster.primary projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster; then
+              echo "Cluster not found, creating new cluster..."
+              terraform apply -target=google_container_cluster.primary -auto-approve -input=false
+            fi
 
-      # ✅ Step 7: Terraform Plan (Only on Pull Requests)
-      - name: Terraform Plan
-        run: |
-          cd terraform
-          terraform plan -no-color -input=false
-        continue-on-error: true
+            if ! terraform import google_container_node_pool.primary_nodes projects/${{ secrets.PROJECT_ID }}/locations/us-central1-a/clusters/myapp-gke-cluster/nodePools/myapp-node-pool; then
+              echo "Node pool not found, creating new node pool..."
+              terraform apply -target=google_container_node_pool.primary_nodes -auto-approve -input=false
+            fi
 
-      # ✅ Step 8: Apply Terraform (Only on Push to Main Branch)
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          cd terraform
-          terraform apply -auto-approve -input=false
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+            if ! terraform import google_artifact_registry_repository.myapp_repo projects/${{ secrets.PROJECT_ID }}/locations/us-central1/repositories/myapp-repo; then
+              echo "Artifact Registry repository not found, creating new repository..."
+              terraform apply -target=google_artifact_registry_repository.myapp_repo -auto-approve -input=false
+            fi
+          env:
+            GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
+
+        # ✅ Step 7: Terraform Plan (Only on Pull Requests)
+        - name: Terraform Plan
+          run: |
+            cd terraform
+            terraform plan -no-color -input=false
+          continue-on-error: true
+
+        # ✅ Step 8: Apply Terraform (Only on Push to Main Branch)
+        - name: Terraform Apply
+          if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+          run: |
+            cd terraform
+            terraform apply -auto-approve -input=false
+          env:
+            GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-sa-key.json
 
   build-push:
       name: "Build & Push Docker Images"
