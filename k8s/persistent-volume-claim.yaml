@@ -3,7 +3,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: storage-pvc
   namespace: myapp-namespace
-  finalizers: []
 spec:
   accessModes:
     - ReadWriteMany

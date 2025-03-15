@@ -2,7 +2,6 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: storage-pv
-  namespace: myapp-namespace
 spec:
   capacity:
     storage: 1Gi
@@ -10,5 +9,9 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: manual
-  hostPath:
-    path: "/mnt/data"
+  csi:
+    driver: pd.csi.storage.k8s.io
+    volumeHandle: projects/spry-gateway-453614-i1/zones/us-central1-a/disks/myapp-disk
+    fsType: ext4
+  mountOptions:
+    - discard
