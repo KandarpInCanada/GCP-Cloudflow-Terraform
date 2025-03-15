@@ -147,7 +147,28 @@ jobs:
         run: |
           gcloud container clusters get-credentials myapp-gke-cluster --zone us-central1-a
 
-      # ✅ Step 7: Update Kubernetes Deployments
+      # ✅ Step 7: Apply Kubernetes Resources
+      - name: Apply Kubernetes Resources
+        run: |
+          # Apply namespace
+          kubectl apply -f k8s/namespace.yaml
+
+          # Apply persistent volume
+          kubectl apply -f k8s/persistent-volume.yaml
+
+          # Apply persistent volume claim
+          kubectl apply -f k8s/persistent-volume-claim.yaml
+
+          # Apply config map
+          kubectl apply -f k8s/config-map.yaml
+
+          # Apply validator-api deployment
+          kubectl apply -f k8s/validator_api/validator-deployment.yaml
+
+          # Apply processor-api deployment
+          kubectl apply -f k8s/processor_api/processor-deployment.yaml
+
+      # ✅ Step 8: Update Kubernetes Deployments (Optional)
       - name: Update Kubernetes Deployments
         run: |
           kubectl set image deployment/validator-api validator-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
