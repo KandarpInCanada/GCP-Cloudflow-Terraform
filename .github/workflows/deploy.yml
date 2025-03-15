@@ -167,9 +167,3 @@ jobs:
 
           # Apply processor-api deployment
           kubectl apply -f k8s/processor_api/processor-deployment.yaml
-
-      # ✅ Step 8: Update Kubernetes Deployments (Optional)
-      - name: Update Kubernetes Deployments
-        run: |
-          kubectl set image deployment/validator-api validator-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/validator-api:$GITHUB_SHA
-          kubectl set image deployment/processor-api processor-api=us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/myapp-repo/processor-api:$GITHUB_SHA
