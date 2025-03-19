@@ -19,21 +19,18 @@ steps:
       - 'us-central1-a'
     id: 'Set up kubectl'
 
-  # Deploy processor_api to GKE
+  # Substitute the COMMIT_SHA into the deployment file and deploy to GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
-      - 'kubectl'
-      - 'apply'
-      - '-f'
-      - 'processor_api/k8s/processor-api-deployment.yaml'
-    id: 'Deploy processor_api to GKE'
+      - 'sh'
+      - '-c'
+      - |
+          sed -i 's|${_COMMIT_SHA}|'"$COMMIT_SHA"'|g' processor_api/k8s/processor-api-deployment.yaml
+          kubectl apply -f processor_api/k8s/processor-api-deployment.yaml
+    id: 'Deploy validator_api to GKE'
 
 images:
   - 'gcr.io/$PROJECT_ID/processor_api:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
-substitutions:
-  _PROJECT_ID: 'spry-gateway-453614-i1'
-  _COMMIT_SHA: '$COMMIT_SHA'
