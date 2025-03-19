@@ -25,7 +25,10 @@ steps:
       - 'sh'
       - '-c'
       - |
+          # Substitute COMMIT_SHA into the deployment file
           sed -i 's|gcr.io/spry-gateway-453614-i1/validator_api:${COMMIT_SHA}|gcr.io/spry-gateway-453614-i1/validator_api:'"$COMMIT_SHA"'|g' validator_api/k8s/validator-api-deployment.yaml
+          
+          # Deploy to GKE
           kubectl apply -f validator_api/k8s/validator-api-deployment.yaml
     id: 'Deploy validator_api to GKE'
 

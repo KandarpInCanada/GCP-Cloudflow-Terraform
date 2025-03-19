@@ -33,7 +33,6 @@ class StoreFile(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
 class Calculate(APIView):
     def post(self, request):
         data = request.data
