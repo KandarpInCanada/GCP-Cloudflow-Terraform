@@ -15,15 +15,18 @@ spec:
     spec:
       containers:
       - name: processor-api
-        image: kandarpincanada/processor-api:1.0.1
+        image: gcr.io/spry-gateway-453614-i1/processor_api:latest
         ports:
         - containerPort: 6001
         env:
         - name: VOLUME_MOUNT_PATH
-          value: "/yourname_PV_dir/"
+          valueFrom:
+            configMapKeyRef:
+              name: myapp-config
+              key: VOLUME_MOUNT_PATH
         volumeMounts:
         - name: shared-storage
-          mountPath: "/yourname_PV_dir/"
+          mountPath: "/mnt/data"
         resources:
           requests:
             memory: "256Mi"

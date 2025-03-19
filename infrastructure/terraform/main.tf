@@ -1,30 +1,3 @@
-# Create GKE cluster
-resource "google_container_cluster" "primary" {
-  name                     = "myapp-gke-cluster"
-  location                 = "us-central1-a"
-  remove_default_node_pool = true
-  initial_node_count       = 1
-
-  release_channel {
-    channel = "REGULAR"
-  }
-
-  # Add maintenance window to avoid unexpected disruptions
-  maintenance_policy {
-    daily_maintenance_window {
-      start_time = "03:00" # UTC time for maintenance (low traffic hours)
-    }
-  }
-
-  # Ignore changes if the resource already exists
-  lifecycle {
-    ignore_changes = [
-      initial_node_count,
-      node_config,
-    ]
-  }
-}
-
 provider "google" {
   project     = var.project_id
   region      = "us-central1"
@@ -35,25 +8,38 @@ provider "google" {
 # Get Google Cloud configuration
 data "google_client_config" "default" {}
 
+# Create GKE cluster
+resource "google_container_cluster" "primary" {
+  name                     = "myapp-gke-cluster"
+  location                 = "us-central1-a"
+  remove_default_node_pool = true
+  initial_node_count       = 1
+  release_channel {
+    channel = "REGULAR"
+  }
+  lifecycle {
+    ignore_changes = [
+      initial_node_count,
+      node_config,
+    ]
+  }
+}
+
 # Create node pool with improved resources
 resource "google_container_node_pool" "primary_nodes" {
   name       = "myapp-node-pool"
   location   = "us-central1-a"
   cluster    = google_container_cluster.primary.name
-  node_count = 2 # Increased to 2 for better availability
-
+  node_count = 1
   node_config {
-    preemptible  = true        # Keep preemptible for cost savings but be aware of potential disruptions
-    machine_type = "e2-medium" # Upgraded from e2-small for more resources
-    disk_size_gb = 40          # Increased from 10GB to resolve disk pressure
+    preemptible  = true
+    machine_type = "e2-medium"
+    disk_size_gb = 40
     disk_type    = "pd-standard"
-
-    # Add labels for better node management
     labels = {
       environment = "production"
       app         = "myapp"
     }
-
     oauth_scopes = [
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/devstorage.read_only",
@@ -61,26 +47,32 @@ resource "google_container_node_pool" "primary_nodes" {
       "https://www.googleapis.com/auth/monitoring",
     ]
   }
-
-  # Add auto-scaling capability
   autoscaling {
     min_node_count = 1
     max_node_count = 3
   }
-
-  # Add management settings for better operations
   management {
     auto_repair  = true
     auto_upgrade = true
   }
-
-  # Add lifecycle configuration to handle existing resources
   lifecycle {
     ignore_changes = [
       node_count,
       node_config.0.labels,
       initial_node_count,
     ]
+  }
+}
+
+# Create a Persistent Disk
+resource "google_compute_disk" "myapp_disk" {
+  name = "myapp-disk"
+  zone = "us-central1-a"
+  type = "pd-standard"
+  size = 1
+  labels = {
+    environment = "production"
+    app         = "myapp"
   }
 }
 
@@ -91,4 +83,8 @@ output "kubernetes_cluster_name" {
 output "kubernetes_cluster_host" {
   value     = google_container_cluster.primary.endpoint
   sensitive = true
+}
+
+output "disk_self_link" {
+  value = google_compute_disk.myapp_disk.self_link
 }

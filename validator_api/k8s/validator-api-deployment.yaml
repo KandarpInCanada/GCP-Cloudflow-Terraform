@@ -15,17 +15,23 @@ spec:
     spec:
       containers:
       - name: validator-api
-        image: kandarpincanada/validator-api:1.0.0
+        image: gcr.io/spry-gateway-453614-i1/validator_api:latest
         ports:
         - containerPort: 6000
         env:
         - name: PROCESSOR_API_BASE_URL
-          value: "http://processor-api-service.myapp-namespace.svc.cluster.local:6001"
+          valueFrom:
+            configMapKeyRef:
+              name: myapp-config
+              key: PROCESSOR_API_BASE_URL
         - name: VOLUME_MOUNT_PATH
-          value: "/yourname_PV_dir/"
+          valueFrom:
+            configMapKeyRef:
+              name: myapp-config
+              key: VOLUME_MOUNT_PATH
         volumeMounts:
         - name: shared-storage
-          mountPath: "/yourname_PV_dir/"
+          mountPath: "/mnt/data"
         resources:
           requests:
             memory: "256Mi"
