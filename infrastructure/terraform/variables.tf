@@ -3,5 +3,5 @@ variable "project_id" {
 }
 
 variable "gcp_credentials" {
-  default = "1.json"
+  default = "secrets.json"
 }
