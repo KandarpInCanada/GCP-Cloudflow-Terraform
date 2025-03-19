@@ -42,7 +42,7 @@ spec:
       volumes:
       - name: shared-storage
         persistentVolumeClaim:
-          claimName: storage-pvc
+          claimName: filestore-pvc
 
 ---
 apiVersion: v1

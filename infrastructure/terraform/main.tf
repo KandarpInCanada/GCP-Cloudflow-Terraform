@@ -64,27 +64,30 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 }
 
-# Create a Persistent Disk
-resource "google_compute_disk" "myapp_disk" {
-  name = "myapp-disk"
-  zone = "us-central1-a"
-  type = "pd-standard"
-  size = 1
-  labels = {
-    environment = "production"
-    app         = "myapp"
+# Create a Filestore instance (Basic HDD, 1 TiB)
+resource "google_filestore_instance" "filestore" {
+  name     = "myapp-filestore"
+  location = "us-central1-a" # Same zone as the GKE cluster
+  tier     = "BASIC_HDD"     # Basic HDD is the lowest-cost tier
+
+  file_shares {
+    capacity_gb = 1024 # Minimum capacity for Basic HDD (1 TiB)
+    name        = "myapp_share"
+  }
+  networks {
+    network = "default" # Use the default VPC network
+    modes   = ["MODE_IPV4"]
   }
 }
 
+# Output the GKE cluster details and Filestore IP address
 output "kubernetes_cluster_name" {
   value = google_container_cluster.primary.name
 }
-
 output "kubernetes_cluster_host" {
   value     = google_container_cluster.primary.endpoint
   sensitive = true
 }
-
-output "disk_self_link" {
-  value = google_compute_disk.myapp_disk.self_link
+output "filestore_ip" {
+  value = google_filestore_instance.filestore.networks[0].ip_addresses[0]
 }
