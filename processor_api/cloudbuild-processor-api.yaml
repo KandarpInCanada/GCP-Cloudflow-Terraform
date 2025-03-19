@@ -14,9 +14,9 @@ steps:
       - 'container'
       - 'clusters'
       - 'get-credentials'
-      - '<your-cluster-name>'
+      - 'myapp-gke-cluster'
       - '--zone'
-      - '<your-cluster-zone>'
+      - 'us-central1-a'
     id: 'Set up kubectl'
 
   # Deploy processor_api to GKE
