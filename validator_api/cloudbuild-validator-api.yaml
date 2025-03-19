@@ -25,7 +25,7 @@ steps:
       - 'kubectl'
       - 'apply'
       - '-f'
-      - 'k8s/validator-api-deployment.yaml'
+      - 'validator_api/k8s/validator-api-deployment.yaml'
     id: 'Deploy validator_api to GKE'
 
 images:
