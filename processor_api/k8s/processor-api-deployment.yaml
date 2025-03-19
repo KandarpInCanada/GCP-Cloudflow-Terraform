@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: processor-api
-        image: gcr.io/spry-gateway-453614-i1/processor_api:$COMMIT_SHA
+        image: gcr.io/spry-gateway-453614-i1/processor_api:${_COMMIT_SHA}
         ports:
         - containerPort: 6001
         env:
