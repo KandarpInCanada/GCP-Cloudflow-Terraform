@@ -57,5 +57,5 @@ spec:
     app: validator-api
   ports:
     - protocol: TCP
-      port: 6000
+      port: 80
       targetPort: 6000
