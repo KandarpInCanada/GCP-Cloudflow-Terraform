@@ -19,11 +19,11 @@ class ProcessTheData(APIView):
         try:
             with open(file_path, 'r') as file:
                 content = file.read()
-                print("🔍 File Content Before Processing:\n", content)  # Debugging line
+                print("🔍 File Content Before Processing:\n", content)
             with open(file_path, 'r') as file:
                 reader = csv.DictReader(file)
                 reader.fieldnames = [header.strip() for header in reader.fieldnames]
-                print("🔍 Normalized CSV Headers:", reader.fieldnames)  # Debugging line
+                print("🔍 Normalized CSV Headers:", reader.fieldnames)
                 total = sum(int(row['amount'].strip()) for row in reader if row['product'].strip() == product.strip())
             return Response(
                 {"file": file_name, "sum": total},
