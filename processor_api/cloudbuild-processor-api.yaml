@@ -33,3 +33,7 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _PROJECT_ID: 'spry-gateway-453614-i1'
+  _COMMIT_SHA: '${COMMIT_SHA}'
