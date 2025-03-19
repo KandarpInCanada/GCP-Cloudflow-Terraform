@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
       - name: validator-api
-        image: gcr.io/spry-gateway-453614-i1/validator_api:${COMMIT_SHA}  # This will be replaced by the commit SHA
+        image: gcr.io/spry-gateway-453614-i1/validator_api:${COMMIT_SHA}
+        imagePullPolicy: Always
         ports:
         - containerPort: 6000
         env:
