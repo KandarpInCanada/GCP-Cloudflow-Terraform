@@ -7,7 +7,7 @@ spec:
     storage: 1Ti
   accessModes:
     - ReadWriteMany
-  nfs:  # Correct field for NFS configuration
-    server: <FILESTORE_IP_ADDRESS>  # Replace with your Filestore instance IP
-    path: /myapp_share              # Replace with your Filestore file share name
+  nfs:
+    server: 10.241.40.50
+    path: /myapp_share
   storageClassName: manual
