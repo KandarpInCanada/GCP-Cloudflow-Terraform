@@ -25,9 +25,10 @@ steps:
       - 'sh'
       - '-c'
       - |
-          # Simple string replacement, avoiding regex special characters
-          sed "s/\${COMMIT_SHA}/$COMMIT_SHA/g" validator_api/k8s/validator-api-deployment.yaml
-          cat validator_api/k8s/validator-api-deployment.yaml
+          echo "COMMIT_SHA=$COMMIT_SHA"
+          grep -n "image:" validator_api/k8s/validator-api-deployment.yaml
+          sed -i "s|\${COMMIT_SHA}|$COMMIT_SHA|g" validator_api/k8s/validator-api-deployment.yaml
+          grep -n "image:" validator_api/k8s/validator-api-deployment.yaml
           kubectl apply -f validator_api/k8s/validator-api-deployment.yaml
     id: 'Deploy validator_api to GKE'
 
