@@ -25,7 +25,7 @@ steps:
       - 'sh'
       - '-c'
       - |
-          sed -i 's|${_COMMIT_SHA}|'"$COMMIT_SHA"'|g' processor_api/k8s/processor-api-deployment.yaml
+          sed -i 's|${COMMIT_SHA}|'"$COMMIT_SHA"'|g' processor_api/k8s/processor-api-deployment.yaml
           kubectl apply -f processor_api/k8s/processor-api-deployment.yaml
     id: 'Deploy validator_api to GKE'
 
