@@ -30,3 +30,6 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/processor_api:$COMMIT_SHA'
+
+options:
+  logging: NONE 
