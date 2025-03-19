@@ -1,11 +1,11 @@
 steps:
   # Build Docker image for processor_api
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/processor_api:$COMMIT_SHA', './processor_api']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/processor_api:latest', './processor_api']
 
   # Push Docker image for processor_api
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/processor_api:$COMMIT_SHA']
+    args: ['push', 'gcr.io/$PROJECT_ID/processor_api:latest']
 
   # Set up kubectl and authenticate with GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -19,18 +19,17 @@ steps:
       - 'us-central1-a'
     id: 'Set up kubectl'
 
-  # Substitute the COMMIT_SHA into the deployment file and deploy to GKE
+  # Deploy the latest image to GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
-      - 'sh'
-      - '-c'
-      - |
-          sed -i 's|${COMMIT_SHA}|'"$COMMIT_SHA"'|g' processor_api/k8s/processor-api-deployment.yaml
-          kubectl apply -f processor_api/k8s/processor-api-deployment.yaml
-    id: 'Deploy validator_api to GKE'
+      - 'kubectl'
+      - 'apply'
+      - '-f'
+      - 'processor_api/k8s/processor-api-deployment.yaml'
+    id: 'Deploy processor_api to GKE'
 
 images:
-  - 'gcr.io/$PROJECT_ID/processor_api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/processor_api:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
