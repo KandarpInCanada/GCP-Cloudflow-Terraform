@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: validator-api
-        image: gcr.io/spry-gateway-453614-i1/validator_api:${COMMIT_SHA}
+        image: gcr.io/spry-gateway-453614-i1/validator_api:${COMMIT_SHA}  # This will be replaced by the commit SHA
         ports:
         - containerPort: 6000
         env:
@@ -34,11 +34,11 @@ spec:
           mountPath: "/mnt/data"
         resources:
           requests:
-            cpu: "100m"  # Reduced CPU request
-            memory: "128Mi"  # Reduced memory request
+            cpu: "100m"
+            memory: "128Mi"
           limits:
-            cpu: "500m"  # Adjusted CPU limit
-            memory: "512Mi"  # Adjusted memory limit
+            cpu: "500m"
+            memory: "512Mi"
       volumes:
       - name: shared-storage
         persistentVolumeClaim:
