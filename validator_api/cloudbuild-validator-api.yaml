@@ -32,4 +32,4 @@ images:
   - 'gcr.io/$PROJECT_ID/validator_api:$COMMIT_SHA'
 
 options:
-  logging: NONE 
+  logging: CLOUD_LOGGING_ONLY
