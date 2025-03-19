@@ -3,5 +3,5 @@ variable "project_id" {
 }
 
 variable "gcp_credentials" {
-  default = "/home/runner/gcp-sa-key.json"
+  default = "1.json"
 }
