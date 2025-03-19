@@ -19,14 +19,14 @@ steps:
       - 'us-central1-a'
     id: 'Set up kubectl'
 
-  # Substitute the COMMIT_SHA into the deployment file and deploy to GKE
-  # Substitute the COMMIT_SHA into the deployment file and deploy to GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       - 'sh'
       - '-c'
       - |
-          cat validator_api/k8s/validator-api-deployment.yaml | sed "s|\${COMMIT_SHA}|$COMMIT_SHA|g" > /tmp/deployment.yaml
+          # Use envsubst instead of sed for more reliable variable substitution
+          export COMMIT_SHA=$COMMIT_SHA
+          envsubst < validator_api/k8s/validator-api-deployment.yaml > /tmp/deployment.yaml
           cat /tmp/deployment.yaml  # Debug: print the file to verify content
           kubectl apply -f /tmp/deployment.yaml
     id: 'Deploy validator_api to GKE'
