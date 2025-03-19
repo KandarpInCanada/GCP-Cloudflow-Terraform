@@ -47,7 +47,7 @@ metadata:
   name: processor-api-service
   namespace: myapp-namespace
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: processor-api
   ports:

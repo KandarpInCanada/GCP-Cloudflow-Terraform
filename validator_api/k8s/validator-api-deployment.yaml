@@ -52,7 +52,7 @@ metadata:
   name: validator-api-service
   namespace: myapp-namespace
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: validator-api
   ports:
