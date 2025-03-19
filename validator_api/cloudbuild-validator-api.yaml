@@ -26,8 +26,9 @@ steps:
       - 'sh'
       - '-c'
       - |
-          cat validator_api/k8s/validator-api-deployment.yaml | sed "s|\${COMMIT_SHA}|$COMMIT_SHA|g" > deployment.yaml
-          kubectl apply -f deployment.yaml
+          cat validator_api/k8s/validator-api-deployment.yaml | sed "s|\${COMMIT_SHA}|$COMMIT_SHA|g" > /tmp/deployment.yaml
+          cat /tmp/deployment.yaml  # Debug: print the file to verify content
+          kubectl apply -f /tmp/deployment.yaml
     id: 'Deploy validator_api to GKE'
 
 images:
