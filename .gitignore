@@ -2,3 +2,4 @@
 infrastructure/terraform/.terraform
 *.tfstate
 *.backup
+secret.json
