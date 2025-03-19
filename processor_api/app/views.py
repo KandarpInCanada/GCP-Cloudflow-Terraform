@@ -20,6 +20,7 @@ class ProcessTheData(APIView):
             with open(file_path, 'r') as file:
                 content = file.read()
                 print("🔍 File Content Before Processing:\n", content)
+                print("🔍 Test log:\n", content)
             with open(file_path, 'r') as file:
                 reader = csv.DictReader(file)
                 reader.fieldnames = [header.strip() for header in reader.fieldnames]
