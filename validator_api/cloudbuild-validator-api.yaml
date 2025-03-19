@@ -1,11 +1,11 @@
 steps:
   # Build Docker image for validator_api
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/validator_api:$COMMIT_SHA', './validator_api']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/validator_api:latest', './validator_api']
 
   # Push Docker image for validator_api
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/validator_api:$COMMIT_SHA']
+    args: ['push', 'gcr.io/$PROJECT_ID/validator_api:latest']
 
   # Set up kubectl and authenticate with GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -19,21 +19,17 @@ steps:
       - 'us-central1-a'
     id: 'Set up kubectl'
 
-  # Substitute the COMMIT_SHA into the deployment file and deploy to GKE
+  # Deploy the latest image to GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
-      - 'sh'
-      - '-c'
-      - |
-          echo "COMMIT_SHA=$COMMIT_SHA"
-          grep -n "image:" validator_api/k8s/validator-api-deployment.yaml
-          sed -i "s|\${COMMIT_SHA}|$COMMIT_SHA|g" validator_api/k8s/validator-api-deployment.yaml
-          grep -n "image:" validator_api/k8s/validator-api-deployment.yaml
-          kubectl apply -f validator_api/k8s/validator-api-deployment.yaml
+      - 'kubectl'
+      - 'apply'
+      - '-f'
+      - 'validator_api/k8s/validator-api-deployment.yaml'
     id: 'Deploy validator_api to GKE'
 
 images:
-  - 'gcr.io/$PROJECT_ID/validator_api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/validator_api:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
