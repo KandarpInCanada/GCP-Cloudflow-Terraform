@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: processor-api
-        image: gcr.io/spry-gateway-453614-i1/processor_api:latest  # Always uses the latest image
-        imagePullPolicy: Always  # Ensures Kubernetes always pulls the latest image
+        image: gcr.io/spry-gateway-453614-i1/processor_api:latest 
+        imagePullPolicy: Always 
         ports:
         - containerPort: 6001
         env:
@@ -30,11 +30,11 @@ spec:
           mountPath: "/mnt/data"
         resources:
           requests:
-            cpu: "100m"  # Reduced CPU request
-            memory: "128Mi"  # Reduced memory request
+            cpu: "100m"
+            memory: "128Mi"
           limits:
-            cpu: "500m"  # Adjusted CPU limit
-            memory: "512Mi"  # Adjusted memory limit
+            cpu: "500m"
+            memory: "512Mi"
       volumes:
       - name: shared-storage
         persistentVolumeClaim:

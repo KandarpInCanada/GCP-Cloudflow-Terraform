@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: validator-api
-        image: gcr.io/spry-gateway-453614-i1/validator_api:latest  # Always pulls the latest image
-        imagePullPolicy: Always  # Ensures the latest image is pulled every time
+        image: gcr.io/spry-gateway-453614-i1/validator_api:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 6000
         env:
