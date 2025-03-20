@@ -5,4 +5,4 @@ metadata:
   namespace: myapp-namespace
 data:
   PROCESSOR_API_BASE_URL: "http://processor-api-service:6001"
-  VOLUME_MOUNT_PATH: "/mnt/data"
+  VOLUME_MOUNT_PATH: "/kandarp_PV_dir"

@@ -27,7 +27,7 @@ spec:
               key: VOLUME_MOUNT_PATH
         volumeMounts:
         - name: shared-storage
-          mountPath: "/mnt/data"
+          mountPath: "/kandarp_PV_dir"
         resources:
           requests:
             cpu: "100m"
@@ -38,7 +38,7 @@ spec:
       volumes:
       - name: shared-storage
         persistentVolumeClaim:
-          claimName: filestore-pvc
+          claimName: shared-pvc
 
 ---
 apiVersion: v1

@@ -1,13 +1,12 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: filestore-pv
+  name: shared-pv
 spec:
   capacity:
-    storage: 1Ti
+    storage: 10Gi
   accessModes:
     - ReadWriteMany
-  nfs:
-    server: 10.241.40.50
-    path: /myapp_share
-  storageClassName: manual
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /kandarp_PV_dir

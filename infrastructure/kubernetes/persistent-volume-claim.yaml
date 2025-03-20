@@ -1,13 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: filestore-pvc
+  name: shared-pvc
   namespace: myapp-namespace
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 1Ti
-  storageClassName: manual
-  volumeName: filestore-pv
+      storage: 10Gi
+  storageClassName: standard
