@@ -9,6 +9,7 @@ PROCESSOR_API_BASE_URL = os.getenv('PROCESSOR_API_BASE_URL')
 PROCESSOR_API_URL = f"{PROCESSOR_API_BASE_URL}/process"
 DATA_DIR = os.getenv('VOLUME_MOUNT_PATH')
 
+
 class StoreFile(APIView):
     def post(self, request):
         data = request.data
