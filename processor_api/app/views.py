@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = os.getenv('VOLUME_MOUNT_PATH')
 
+
 class ProcessTheData(APIView):
     def post(self, request):
         data = request.data
